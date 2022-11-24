@@ -30,7 +30,9 @@ const handler: Handler = async (event: Event, context: Context) => {
     }
 
     const message: string = EnvVariableHelpers.GetEnvironmentVariable("message");
-    const status: string = message.replace('{USERNAME}', `@${mastodonUserName}`);
+    const status: string = message
+        .replace("{USERNAME}", `@${mastodonUserName}`)
+        .replaceAll("|", "\n");
     try {
         await MastodonApiClient.publishStatus(status);
         return { statusCode: 200 };
