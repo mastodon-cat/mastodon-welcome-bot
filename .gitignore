@@ -1,0 +1,7 @@
+.netlify
+.vscode
+dist_website/
+dist_functions/
+node_modules/
+
+.env

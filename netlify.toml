@@ -1,0 +1,7 @@
+[functions]
+  directory = "src/functions"
+
+# [build]
+#   command = "npm run build"
+#   publish = "dist_website/"
+#   functions = "dist_functions/"
