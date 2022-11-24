@@ -12,6 +12,7 @@ export class MastodonApiClient {
             });
 
             await MastodonApiClient.mastodonApiCall(url, 'POST', body);
+            console.log(`Welcome message sent: '${message}'`);
         } catch (error: any) {
             console.error('Error publishing to ' + instanceName, error);
             throw error;
