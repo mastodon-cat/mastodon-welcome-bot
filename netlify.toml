@@ -1,5 +1,9 @@
 [functions]
-  directory = "src/functions"
+directory = "src/functions"
+
+[functions."welcome-new-user"]
+schedule = "*/5 * * * *"
+# schedule = "@hourly"
 
 # [build]
 #   command = "npm run build"
