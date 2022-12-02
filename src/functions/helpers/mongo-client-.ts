@@ -1,5 +1,5 @@
 import { Collection, Db, MongoClient, ObjectId, UpdateResult } from "mongodb";
-import { Execution, ExecutionStatus } from "../interfaces/execution";
+import { Execution, ExecutionStatus, IExecution } from "../interfaces/execution";
 import { EnvVariableHelpers } from "./env-variable-helpers";
 import { ErrorHelper } from "./error-helper";
 
@@ -14,11 +14,11 @@ export class MongoCollectionHandler {
 
     public async getExecution(): Promise<Execution> {
         await this.initializeCollection();
-        const execution: Execution = await this.collection.findOne<Execution>({}) || {} as Execution;
+        const execution: IExecution = await this.collection.findOne<IExecution>({}) || {} as Execution;
         if (!execution?._id) {
             ErrorHelper.HandleError("Could not retrieve execution, for it is an empty object.");
         }
-        return execution;
+        return new Execution(execution);
     }
 
     public async updateExecutionStatus(id: ObjectId, status: ExecutionStatus): Promise<void> {
@@ -35,7 +35,7 @@ export class MongoCollectionHandler {
     public async updateExecution(execution: Execution): Promise<void> {
         await this.initializeCollection();
 
-        let statusUpdated: UpdateResult = await await this.collection.updateOne({ _id: execution._id },
+        let statusUpdated: UpdateResult = await this.collection.updateOne({ _id: execution._id },
             { $set: { status: execution.status, lastSignUpNotificationId: execution.lastSignUpNotificationId } });
 
         if (statusUpdated.modifiedCount !== 1) {
