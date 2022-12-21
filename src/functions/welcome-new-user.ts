@@ -1,14 +1,12 @@
 import { Handler } from "@netlify/functions";
 import { ErrorHelper } from "./helpers/error-helper";
 import { MastodonApiClient } from "./helpers/mastodon-api-client";
-import { MongoCollectionHandler } from "./helpers/mongo-client-";
+import { MongoCollectionHandler } from "./helpers/mongo-client";
 import { Execution, ExecutionStatus } from "./interfaces/execution";
 import { SignUpNotification } from "./interfaces/signUpNotificationInterface";
 
 const handler: Handler = async () => {
-    // EnvVariableHelpers.AssertMastodonEnvVariablesArePresent();
-
-    let mongoClient: MongoCollectionHandler = new MongoCollectionHandler();
+    const mongoClient: MongoCollectionHandler = new MongoCollectionHandler();
     const execution: Execution = await mongoClient.getExecution();
 
     if (execution.status === ExecutionStatus.Iddle) {
