@@ -28,9 +28,9 @@ After creating the application, 3 keys will be revealed: Client key, Client secr
 # Documentation
 ## Environment variables
 This function relies on environment variables to be able to send the welcome publication.
-* `mongo_connectionstring` --> The connection string to the MongoDb database. It must start with `mongodb://` or `mongodb+srv://`.
-* `mongo_dbname` --> The name of the MongoDb database.
-* `mongo_collection` --> The name of the MongoDb collection.
+* **mongo_connectionstring** ➡️ The connection string to the MongoDb database. It must start with `mongodb://` or `mongodb+srv://`.
+* **mongo_dbname** ➡️ The name of the MongoDb database.
+* **mongo_collection** ➡️ The name of the MongoDb collection.
 
 ## Database
 The database is a very simple one, consisting in just one document in one collection with the following structure:
@@ -48,6 +48,12 @@ The database is a very simple one, consisting in just one document in one collec
 * **id** ➡️ is the Id of the MongoDb document. It is not important, but it should not change.
 * **status** ➡️ is either `Iddle` or `Running`.
 * **lastSignUpNotificationId** ➡️ is the Id of the last `admin.sign_up` notification retrieved from Mastodon. It is only updated after successfully sending the welcome message to the user.
+  * To know what this value must be prior to the deploying the functions, simply run the following request. It will get you the last 100 sign_up notifications. Pick the Id of the last one (or the one you prefer) and set the value.
+ ```curl 
+ curl --location -g --request GET 'https://{INSTANCE_NAME}/api/v1/notifications?types[]=admin.sign_up' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer {MASTODON_API_TOKEN}'
+ ```
 * **welcomeMessage** ➡️ The message to send to the newly registered user. To mention the user, the text `{USERNAME}` (**capital letters**) must be present in the text. The text can be multi-line.
 * **status** ➡️ is either `Iddle` or `Running`.
 * **welcomeMessageVisibility** ➡️ is either `public`, `unlisted`, `private` or `direct`. If not set, it defaults to `direct`.
