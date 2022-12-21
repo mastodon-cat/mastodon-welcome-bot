@@ -1,53 +1,84 @@
 # Introduction
 When users sign up on a Mastodont's instance is nice to welcome them with a friendly message.
 
-This project has been designed as a [Netlify function](https://docs.netlify.com/functions/overview/) that receives the result of Mastodont's `account.created` webhook and publishes a welcome message. The user can be mentioned in that message.
+This project has been designed as a [Netlify function](https://docs.netlify.com/functions/overview/) that periodically requests [Mastodont's user notifications](https://docs.joinmastodon.org/methods/notifications/), filtering for `admin.sign_up` type. Then publishes a welcome message for each notification received since last message sent. The user can be mentioned in that message.
 
-As the webhook configuration does not allow to add any header, there's no way to identify via Authorization header who reached the function endpoint. It could be done via querystring, although that feature is not implemented at the moment.
+In order to avoid sending the welcome message more than once to the same user, the process stores in a MongoDb database the ID of the last `admin.sign_up` notification after sending the message.
 
+## Why don't use a Mastodon webhook to act when a new user is created?
+The webhook acts instantlly when a new user signs up, so the welcome message would be sent before the account has been verified. In this case, the mention to the user is not valid, and it would remain as plain text.
+The `admin.sign_up` notification is not fired after the user actually verifies the account. This is why it is a valid method.
 # Deploying the function
-You can use the following button and follow the steps to create the application in Netlify.
+You can use the following button and follow the steps to deploy the Function to Netlify.
 
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/mastodon-cat/mastodon-welcome-bot)
 
 If you rather do it manually, a [netlify.toml](./netlify.toml) file has been added to the project with the necessary configuration to deploy the function.
 
-Either way, you must set the `environment variables` in the Netlify site where the function is deployed. **Please, read the environment variables documentation**.
+Either way, you must set the `environment variables` in the Netlify site where the function is deployed. 
 
-This function needs a Mastodon application to be created so the message can be sent. It also needs a Mastodon webhook so Mastodon can send the account.created data to the function.
+**Please, read the environment variables documentation**.
 
-## Application
-Go to `/settings/applications` Mastodon's instance URL and create a New Application. The new Application only needs an Application Name and the **`write:statuses`** Scope. Anybody can create this application, no special permissions are needed.
+This function needs a Mastodon application to be created so the notifications can be read and the message can be sent.
+
+# Application
+Go to `/settings/applications` in your Mastodon's instance and create a New Application. The new Application only needs an Application Name and the **`read:notifications`** and **`write:statuses`** scopes. To be able to read `admin.sign_up` notifications, the Application must be created by a user with enough permissions.
 After creating the application, 3 keys will be revealed: Client key, Client secret, and Your access token. `'Your access token'` will be the one used by the function.
-
-## Webhook
-`This can only be done after the function has beedn deployed to Netlify`. Creating a webhook needs `Manage webhooks (0x8000)` [permissions](https://docs.joinmastodon.org/entities/Role/). Log in as a user with the required permissions. Go to `/admin/roles` Mastodon's instance URL and add a new endpoint with the Netlify function's URL.
 
 # Documentation
 ## Environment variables
 This function relies on environment variables to be able to send the welcome publication.
-* `instance_name` --> The name of Mastodont's instance where the user has configured the webhook. For example `Mastodon.cat` would be a valid value.
-* `token` --> The `'Your access token'` value from the Mastodon's application.
-* `message` --> The message to send to the newly registered user. To mention the user, the text `{USERNAME}` (**capital letters**) must be present in the text. As the message is stored in an environment variable and **Netlify environment variables do not allow line breaks** (it ignores them) **| (a pipe symbol)** can be used in the message to be dynamically replaced as line breaks. To get a double line break just add two pipes: ||.
+* `mongo_connectionstring` --> The connection string to the MongoDb database. It must start with `mongodb://` or `mongodb+srv://`.
+* `mongo_dbname` --> The name of the MongoDb database.
+* `mongo_collection` --> The name of the MongoDb collection.
 
+## Database
+The database is a very simple one, consisting in just one document in one collection with the following structure:
+```ts
+{
+  _id: ObjectId;
+  status: string;
+  lastSignUpNotificationId: number;
+  welcomeMessage: string;
+  welcomeMessageVisibility: string;
+  mastodonApiToken: string;
+  mastodonInstanceName: string;
+}
+```
+* **id** ➡️ is the Id of the MongoDb document. It is not important, but it should not change.
+* **status** ➡️ is either `Iddle` or `Running`.
+* **lastSignUpNotificationId** ➡️ is the Id of the last `admin.sign_up` notification retrieved from Mastodon. It is only updated after successfully sending the welcome message to the user.
+* **welcomeMessage** ➡️ The message to send to the newly registered user. To mention the user, the text `{USERNAME}` (**capital letters**) must be present in the text. The text can be multi-line.
+* **status** ➡️ is either `Iddle` or `Running`.
+* **welcomeMessageVisibility** ➡️ is either `public`, `unlisted`, `private` or `direct`. If not set, it defaults to `direct`.
+* **mastodonApiToken** ➡️ The `'Your access token'` value from the Mastodon's application.
+* **mastodonInstanceName** ➡️ The name of Mastodont's instance where the user has configured the webhook. For example `Mastodon.cat` would be a valid value.
 ## Function
-[The function](./src/functions/welcome-new-user.ts) will ensure 4 main points before trying to use the body received, throwing an Exception if any of them fails :
-1. All mandatory environment variables are set.
-2. Http Method is a POST, because the `account.created` endpoint works uses the POST Method.
-3. A Body has been received.
-4. The function will parse the body into a `NewUser` object and assert if the `username` property is in place.
-
-After that, the function just publishes the status via API and returns a status code accordingly.
+[The function](./src/functions/welcome-new-user.ts) follows these steps:
+1. Creates a client to work with MongoDb collections. The constructor of the client ensures that all necessary environment variables to work with MongoDb are set.
+2. Checks that current execution status is `Iddle`. If it's not, it does nothing. This way concurrency is avoided.
+3. Sets the current execution status to `Running`.
+4. Gets all notifications since last one and orders them by Id ASC.
+5. Publishes a welcome message for each `admin.sign_up` notification.
+6. Sets the current execution status back to `Iddle` and the `lastSignUpNotificationId` to the ID of the last notification for which a welcome message has been sent.
 
 ## Helpers
 Some classes with static methods have been created either to reuse code or to keep the main code of the function as simple as possible.
 ### [ErrorHelper](./src/functions/helpers/error-helper.ts)
 Errors in Netlify's log are very visual because they're shown on a red background.
-* `HandleError` --> Sends the message as an error to the console before throwing an Exception.
+* **HandleError** ➡️ Sends the message as an error to the console before throwing an Exception.
 ### [EnvVariableHelpers](./src/functions/helpers/env-variable-helpers.ts)
 Handles environment variables
-* `AssertEnvVariablesArePresent` --> if any needed environment variable is missing in the configuration, uses the HandleError helper to throw an Exception.
-* `GetEnvironmentVariable` --> The existence of all needed environment variables has been asserted at the beginning of the function by calling the AssertEnvVariablesArePresent method. In NodeJS retrieving an environment variable using `process.env.VariableName` or `process.env.['VariableName']` returns a nullable string (string?) but we want a not nullable string, so we avoid false alerts in our code. **GetEnvironmentVariable is just a silly & convenient method to get a string instead of a string?**.
+* **AssertEnvVariablesArePresent** ➡️ if any needed environment variable is missing in the configuration, uses the HandleError helper to throw an Exception.
+* **GetEnvironmentVariable** ➡️ The existence of all needed environment variables has been asserted at the beginning of the function by calling the AssertEnvVariablesArePresent method. In NodeJS retrieving an environment variable using `process.env.VariableName` or `process.env.['VariableName']` returns a nullable string (string?) but we want a not nullable string, so we avoid false alerts in our code. **GetEnvironmentVariable is just a silly & convenient method to get a string instead of a string?**.
 ### [MastodonApiClient](./src/functions/helpers/mastodon-api-client.ts)
-A class to encapsulate calls to Mastodon API.
-* `publishStatus` --> Builds the JSON body with the welcome message and sends it to Mastodon's API. Handles the Exception.
+A class to encapsulate requests to the Mastodon API.
+* **getLastSignUps** ➡️ Gets all notifications of type `admin.sign_up` since last one.
+* **publishStatus** ➡️ Builds the JSON body with the welcome message and the selected visibility (`direct` if undefined) and sends it to Mastodon's API. Handles the Exception.
+
+### [MongoCollectionHandler](./src/functions/helpers/mongo-client.ts)
+A class to encapsulate work with MongoDb Client.
+* **getExecution** ➡️ Gets the document with the data mentioned in the **Database section**.
+* **updateExecutionStatus** ➡️ Sets the status property in the MongoDb document.
+* **updateExecution** ➡️ Sets ths status and the lastSignUpNotificationId in the MongoDb document.
+* **dispose** ➡️ Closes the MongoDb Client.
