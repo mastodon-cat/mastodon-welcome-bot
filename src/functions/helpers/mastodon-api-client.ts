@@ -23,14 +23,14 @@ export class MastodonApiClient {
         }
     }
 
-    public async publishStatus(message: string): Promise<void> {
+    public async publishStatus(message: string, visibility: string): Promise<void> {
         const instanceName: string = EnvVariableHelpers.GetEnvironmentVariable("instance_name");
         try {
             const url: string = `https://${this.instanceName}/api/v1/statuses`;
 
             const body = {
                 status: message,
-                visibility: "direct"
+                visibility: visibility || "direct"
             };
 
             await this.mastodonApiCall(url, 'POST', body);

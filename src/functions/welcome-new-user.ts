@@ -22,8 +22,8 @@ const handler: Handler = async () => {
 
             for (const signUp of signUps) {
                 try {
-                    buildStatusMessage(execution, signUp);
-                    await mastodonClient.publishStatus(execution.welcomeMessage);
+                    const message: string = buildStatusMessage(execution, signUp);
+                    await mastodonClient.publishStatus(message, execution.welcomeMessageVisibility);
                 } catch (error) {
                     ErrorHelper.HandleError("There was an error publishing the status to mastodon. Check the logs for more detail.", error);
                 }
@@ -44,7 +44,7 @@ const handler: Handler = async () => {
 
 export { handler };
 
-function buildStatusMessage(execution: Execution, signUp: SignUpNotification): void {
+function buildStatusMessage(execution: Execution, signUp: SignUpNotification): string {
     let mastodonUserName: string = "";
     try {
         if (!signUp?.account?.username) {
@@ -56,6 +56,6 @@ function buildStatusMessage(execution: Execution, signUp: SignUpNotification): v
         ErrorHelper.HandleError(`Notification is not valid: ${error}`, signUp);
     }
 
-    execution.welcomeMessage = execution.welcomeMessage
+    return execution.welcomeMessage
         .replaceAll("{USERNAME}", `@${mastodonUserName}`);
 }

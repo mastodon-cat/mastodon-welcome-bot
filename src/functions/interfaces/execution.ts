@@ -11,6 +11,7 @@ export interface IExecution {
   status: ExecutionStatus;
   lastSignUpNotificationId: number;
   welcomeMessage: string;
+  welcomeMessageVisibility: string;
   mastodonApiToken: string;
   mastodonInstanceName: string;
 }
@@ -24,6 +25,7 @@ export class Execution implements IExecution {
     this.status = execution.status;
     this.lastSignUpNotificationId = execution.lastSignUpNotificationId;
     this.welcomeMessage = execution.welcomeMessage;
+    this.welcomeMessageVisibility = execution.welcomeMessageVisibility;
     this.mastodonApiToken = execution.mastodonApiToken;
     this.mastodonInstanceName = execution.mastodonInstanceName;
   }
@@ -32,6 +34,7 @@ export class Execution implements IExecution {
   public status: ExecutionStatus;
   public lastSignUpNotificationId: number;
   public welcomeMessage: string;
+  public welcomeMessageVisibility: string;
   public mastodonApiToken: string;
   public mastodonInstanceName: string;
 
