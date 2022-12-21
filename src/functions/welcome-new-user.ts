@@ -1,45 +1,59 @@
 import { Handler } from "@netlify/functions";
-import { Context } from "@netlify/functions/dist/function/context";
-import { Event } from "@netlify/functions/dist/function/event";
-import { EnvVariableHelpers } from "./helpers/env-variable-helpers";
 import { ErrorHelper } from "./helpers/error-helper";
 import { MastodonApiClient } from "./helpers/mastodon-api-client";
-import { NewUser } from "./interfaces/newUserInterface";
+import { MongoCollectionHandler } from "./helpers/mongo-client";
+import { Execution, ExecutionStatus } from "./interfaces/execution";
+import { SignUpNotification } from "./interfaces/signUpNotificationInterface";
 
-const handler: Handler = async (event: Event, context: Context) => {
-    EnvVariableHelpers.AssertEnvVariablesArePresent();
+const handler: Handler = async () => {
+    const mongoClient: MongoCollectionHandler = new MongoCollectionHandler();
+    const execution: Execution = await mongoClient.getExecution();
 
-    if (!event.httpMethod || event.httpMethod !== "POST") {
-        ErrorHelper.HandleError("This is not a POST method call", event);
-    }
+    if (execution.status === ExecutionStatus.Iddle) {
+        const mastodonClient = new MastodonApiClient(execution);
+        await mongoClient.updateExecutionStatus(execution._id, ExecutionStatus.Running);
 
-    if (!event.body) {
-        ErrorHelper.HandleError("There is no body.", event);
-    }
+        try {
+            let signUps: SignUpNotification[] = await mastodonClient.getLastSignUps(execution.lastSignUpNotificationId);
+            // ORDER by Id ASC
+            signUps = signUps.sort((x, y) => x.id - y.id);
 
-    let mastodonUserName: string = "";
-    try {
-        const mastodonUser: NewUser = JSON.parse(event.body as string);
-        if (!mastodonUser?.object?.account?.username) {
-            throw "There is no username";
+            for (const signUp of signUps) {
+                try {
+                    const message: string = buildStatusMessage(execution, signUp);
+                    await mastodonClient.publishStatus(message, execution.welcomeMessageVisibility);
+                } catch (error) {
+                    ErrorHelper.HandleError("There was an error publishing the status to mastodon. Check the logs for more detail.", error);
+                }
+                execution.lastSignUpNotificationId = signUp.id;
+            }
+        } finally {
+            execution.status = ExecutionStatus.Iddle;
+            await mongoClient.updateExecution(execution);
         }
 
-        mastodonUserName = mastodonUser.object.account.username;
-    } catch (error) {
-        ErrorHelper.HandleError(`Body is not valid: ${error}`, event.body as string);
+    } else {
+        console.log("Process is already running.");
     }
 
-    const message: string = EnvVariableHelpers.GetEnvironmentVariable("message");
-    const status: string = message
-        .replace("{USERNAME}", `@${mastodonUserName}`)
-        .replaceAll("|", "\n");
-    try {
-        await MastodonApiClient.publishStatus(status);
-        return { statusCode: 200 };
-    } catch {
-        return { statusCode: 500, body: "There was an error publishing the status to mastodon. Check the logs for more detail." };
-    }
+    mongoClient.dispose();
+    return { statusCode: 200 };
 };
 
 export { handler };
 
+function buildStatusMessage(execution: Execution, signUp: SignUpNotification): string {
+    let mastodonUserName: string = "";
+    try {
+        if (!signUp?.account?.username) {
+            throw "There is no username";
+        }
+
+        mastodonUserName = signUp.account.username;
+    } catch (error) {
+        ErrorHelper.HandleError(`Notification is not valid: ${error}`, signUp);
+    }
+
+    return execution.welcomeMessage
+        .replaceAll("{USERNAME}", `@${mastodonUserName}`);
+}
