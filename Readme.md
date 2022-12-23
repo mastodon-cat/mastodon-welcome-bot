@@ -5,6 +5,8 @@ This project has been designed as a [Netlify function](https://docs.netlify.com/
 
 In order to avoid sending the welcome message more than once to the same user, the process stores in a MongoDb database the ID of the last `admin.sign_up` notification after sending the message.
 
+The function is configured to auto-run every 5 minutes, leveraging on [netlify Scheduled Functions](https://docs.netlify.com/functions/scheduled-functions/). It can be configured in the [netlify.toml](./netlify.toml) file.
+
 ## Why don't use a Mastodon webhook to act when a new user is created?
 The webhook acts instantlly when a new user signs up, so the welcome message would be sent before the account has been verified. In this case, the mention to the user is not valid, and it would remain as plain text.
 The `admin.sign_up` notification is not fired after the user actually verifies the account. This is why it is a valid method.
