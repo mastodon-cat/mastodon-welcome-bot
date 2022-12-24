@@ -7,6 +7,11 @@ In order to avoid sending the welcome message more than once to the same user, t
 
 The function is configured to auto-run every 5 minutes, leveraging on [netlify Scheduled Functions](https://docs.netlify.com/functions/scheduled-functions/). It can be configured in the [netlify.toml](./netlify.toml) file.
 
+## Would you like to buy us a coffee?
+
+Use the button below to make a donation, which will fund our instance of [mastodon.cat](https://mastodon.cat). Thank you!❤️❤️
+[![Invite us for a cup of coffee!!](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/L4L3H5BQL)
+
 ## Why don't use a Mastodon webhook to act when a new user is created?
 The webhook acts instantlly when a new user signs up, so the welcome message would be sent before the account has been verified. In this case, the mention to the user is not valid, and it would remain as plain text.
 The `admin.sign_up` notification is not fired after the user actually verifies the account. This is why it is a valid method.
