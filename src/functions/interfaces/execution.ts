@@ -1,4 +1,3 @@
-import { ObjectId } from "mongodb";
 import { ErrorHelper } from "../helpers/error-helper";
 
 export enum ExecutionStatus {
@@ -7,7 +6,7 @@ export enum ExecutionStatus {
 }
 
 export interface IExecution {
-  _id: ObjectId;
+  id: string;
   status: ExecutionStatus;
   lastSignUpNotificationId: number;
   welcomeMessage: string;
@@ -21,7 +20,7 @@ export class Execution implements IExecution {
   // with an "is not a function method" because there's a function in the class
   // so instead, we deserialize into IExecution and then "transform" it into Execution
   constructor(execution: IExecution) {
-    this._id = execution._id;
+    this.id = execution.id;
     this.status = execution.status;
     this.lastSignUpNotificationId = execution.lastSignUpNotificationId;
     this.welcomeMessage = execution.welcomeMessage;
@@ -30,7 +29,7 @@ export class Execution implements IExecution {
     this.mastodonInstanceName = execution.mastodonInstanceName;
   }
 
-  public _id: ObjectId;
+  public id: string;
   public status: ExecutionStatus;
   public lastSignUpNotificationId: number;
   public welcomeMessage: string;
