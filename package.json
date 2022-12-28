@@ -22,7 +22,6 @@
     "mongodb-client-encryption": "^2.3.0",
     "pg": "^8.8.0",
     "pg-connection-string": "^2.5.0",
-    "pg-native": "^3.0.1",
     "saslprep": "^1.0.3"
   }
 }
