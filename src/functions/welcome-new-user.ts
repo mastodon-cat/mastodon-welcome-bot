@@ -1,17 +1,17 @@
 import { Handler } from "@netlify/functions";
+import { DbClientFacotry, IDbClient } from "./helpers/db-client-factory";
 import { ErrorHelper } from "./helpers/error-helper";
 import { MastodonApiClient } from "./helpers/mastodon-api-client";
-import { MongoCollectionHandler } from "./helpers/mongo-client";
 import { Execution, ExecutionStatus } from "./interfaces/execution";
 import { SignUpNotification } from "./interfaces/signUpNotificationInterface";
 
 const handler: Handler = async () => {
-    const mongoClient: MongoCollectionHandler = new MongoCollectionHandler();
-    const execution: Execution = await mongoClient.getExecution();
+    const dbClient: IDbClient = await DbClientFacotry.getClient();
+    const execution: Execution = await dbClient.getExecution();
 
     if (execution.status === ExecutionStatus.Iddle) {
         const mastodonClient = new MastodonApiClient(execution);
-        await mongoClient.updateExecutionStatus(execution._id, ExecutionStatus.Running);
+        await dbClient.updateExecutionStatus(execution.id, ExecutionStatus.Running);
 
         try {
             let signUps: SignUpNotification[] = await mastodonClient.getLastSignUps(execution.lastSignUpNotificationId);
@@ -29,14 +29,14 @@ const handler: Handler = async () => {
             }
         } finally {
             execution.status = ExecutionStatus.Iddle;
-            await mongoClient.updateExecution(execution);
+            await dbClient.updateExecution(execution);
         }
 
     } else {
         console.log("Process is already running.");
     }
 
-    mongoClient.dispose();
+    dbClient.dispose();
     return { statusCode: 200 };
 };
 
