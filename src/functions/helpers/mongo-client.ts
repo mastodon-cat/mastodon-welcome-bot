@@ -1,30 +1,33 @@
 import { Collection, Db, MongoClient, ObjectId, UpdateResult } from "mongodb";
 import { Execution, ExecutionStatus, IExecution } from "../interfaces/execution";
+import { IDbClient } from "./db-client-factory";
 import { EnvVariableHelpers } from "./env-variable-helpers";
 import { ErrorHelper } from "./error-helper";
 
-export class MongoCollectionHandler {
+export class MongoCollectionHandler implements IDbClient {
     private client!: MongoClient;
     private db!: Db;
     private collection!: Collection;
 
-    constructor() {
-        EnvVariableHelpers.AssertMongoEnvVariablesArePresent();
-    }
-
     public async getExecution(): Promise<Execution> {
-        await this.initializeCollection();
         const execution: IExecution = await this.collection.findOne<IExecution>({}) || {} as Execution;
-        if (!execution?._id) {
+
+        if (!(execution as any)?._id) {
+            ErrorHelper.HandleError("Could not retrieve execution, for it is an empty object.");
+        } else {
+            execution.id = ((execution as any)._id as ObjectId).toString();
+        }
+
+        if (!execution?.id) {
             ErrorHelper.HandleError("Could not retrieve execution, for it is an empty object.");
         }
+
         return new Execution(execution);
     }
 
-    public async updateExecutionStatus(id: ObjectId, status: ExecutionStatus): Promise<void> {
-        await this.initializeCollection();
-
-        let statusUpdated: UpdateResult = await this.collection.updateOne({ _id: id }, { $set: { status: status } });
+    public async updateExecutionStatus(id: string, status: ExecutionStatus): Promise<void> {
+        const objectId: ObjectId = new ObjectId(id);
+        let statusUpdated: UpdateResult = await this.collection.updateOne({ _id: objectId }, { $set: { status: status } });
         if (statusUpdated.modifiedCount !== 1) {
             ErrorHelper.HandleError(`Could not modify execution's status to ${status}.`);
         } else {
@@ -33,9 +36,8 @@ export class MongoCollectionHandler {
     }
 
     public async updateExecution(execution: Execution): Promise<void> {
-        await this.initializeCollection();
-
-        let statusUpdated: UpdateResult = await this.collection.updateOne({ _id: execution._id },
+        const objectId: ObjectId = new ObjectId(execution.id);
+        let statusUpdated: UpdateResult = await this.collection.updateOne({ _id: objectId },
             { $set: { status: execution.status, lastSignUpNotificationId: execution.lastSignUpNotificationId } });
 
         if (statusUpdated.modifiedCount !== 1) {
@@ -53,17 +55,17 @@ AND lastSignUpNotificationId set to '${execution.lastSignUpNotificationId}'.`);
         }
     }
 
-    private async initializeCollection(): Promise<void> {
+    public async initializeClient(): Promise<void> {
         if (!this.client || !this.db || !this.collection) {
-            const connectionString: string = EnvVariableHelpers.GetEnvironmentVariable("mongo_connectionstring");
+            const connectionString: string = EnvVariableHelpers.GetEnvironmentVariable("connectionstring");
             this.client = new MongoClient(connectionString, {});
 
             await this.client.connect();
-            const dbName: string = EnvVariableHelpers.GetEnvironmentVariable("mongo_dbname");
+            const dbName: string = EnvVariableHelpers.GetEnvironmentVariable("dbname");
             await this.client.db(dbName).command({ ping: 1 });
 
             this.db = this.client.db(dbName);
-            const collectionName: string = EnvVariableHelpers.GetEnvironmentVariable("mongo_collection");
+            const collectionName: string = EnvVariableHelpers.GetEnvironmentVariable("table");
             this.collection = this.db.collection(collectionName);
         }
     }
