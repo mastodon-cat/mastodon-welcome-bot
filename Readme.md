@@ -3,7 +3,7 @@ When users sign up on a Mastodont's instance is nice to welcome them with a frie
 
 This project has been designed as a [Netlify function](https://docs.netlify.com/functions/overview/) that periodically requests [Mastodont's user notifications](https://docs.joinmastodon.org/methods/notifications/), filtering for `admin.sign_up` type. Then publishes a welcome message for each notification received since last message sent. The user can be mentioned in that message.
 
-In order to avoid sending the welcome message more than once to the same user, the process stores in a MongoDb database the ID of the last `admin.sign_up` notification after sending the message.
+In order to avoid sending the welcome message more than once to the same user, the process stores in a database the ID of the last `admin.sign_up` notification after sending the message. The database can be a MongoDb or a Postgres one.
 
 The function is configured to auto-run every 5 minutes, leveraging on [netlify Scheduled Functions](https://docs.netlify.com/functions/scheduled-functions/). It can be configured in the [netlify.toml](./netlify.toml) file.
 
@@ -35,12 +35,13 @@ After creating the application, 3 keys will be revealed: Client key, Client secr
 # Documentation
 ## Environment variables
 This function relies on environment variables to be able to send the welcome publication.
-* **mongo_connectionstring** ➡️ The connection string to the MongoDb database. It must start with `mongodb://` or `mongodb+srv://`.
-* **mongo_dbname** ➡️ The name of the MongoDb database.
-* **mongo_collection** ➡️ The name of the MongoDb collection.
+* **connectionstring** ➡️ The connection string to the database. It must start with `mongodb://` or `mongodb+srv://` for MongoDb databases or with `postgres://` for PostgresDb databases.
+* **dbname** ➡️ The name of the MongoDb or PostgresDb database.
+* **table** ➡️ The name of the MongoDb collection or the PostgresDb table.
 
 ## Database
-The database is a very simple one, consisting in just one document in one collection with the following structure:
+The database is a very simple one. The function will automatically connect to MongoDb or Postgres depending on how the connectionstring starts, following the explanation of the **connectionstring environment variable**.
+- For MongoDb consisting in just one document in one collection with the following structure:
 ```ts
 {
   _id: ObjectId;
@@ -52,6 +53,20 @@ The database is a very simple one, consisting in just one document in one collec
   mastodonInstanceName: string;
 }
 ```
+- For PostgresDb consisting in just one row in one table with the following structure:
+```sql
+CREATE TABLE {TABLE_NAME}
+(
+    id UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY UNIQUE,
+    status VARCHAR NOT NULL,
+    "lastSignUpNotificationId" INT NOT NULL,
+    "welcomeMessage" TEXT NOT NULL,
+    "welcomeMessageVisibility" VARCHAR NOT NULL,
+    "mastodonApiToken" VARCHAR NOT NULL,
+    "mastodonInstanceName" VARCHAR NOT NULL
+);
+```
+
 * **id** ➡️ is the Id of the MongoDb document. It is not important, but it should not change.
 * **status** ➡️ is either `Iddle` or `Running`.
 * **lastSignUpNotificationId** ➡️ is the Id of the last `admin.sign_up` notification retrieved from Mastodon. It is only updated after successfully sending the welcome message to the user.
@@ -89,9 +104,15 @@ A class to encapsulate requests to the Mastodon API.
 * **getLastSignUps** ➡️ Gets all notifications of type `admin.sign_up` since last one.
 * **publishStatus** ➡️ Builds the JSON body with the welcome message and the selected visibility (`direct` if undefined) and sends it to Mastodon's API. Handles the Exception.
 
-### [MongoCollectionHandler](./src/functions/helpers/mongo-client.ts)
-A class to encapsulate work with MongoDb Client.
-* **getExecution** ➡️ Gets the document with the data mentioned in the **Database section**.
-* **updateExecutionStatus** ➡️ Sets the status property in the MongoDb document.
-* **updateExecution** ➡️ Sets ths status and the lastSignUpNotificationId in the MongoDb document.
-* **dispose** ➡️ Closes the MongoDb Client.
+### [IDbClient](./src/functions/interfaces/IDbClient.ts)
+An interface to define the contract that MongoDb and Postgres clients need to fulfill class to encapsulate work with database.
+* **getExecution** ➡️ Gets the object with the data mentioned in the **Database section**.
+* **updateExecutionStatus** ➡️ Sets the status property value.
+* **updateExecution** ➡️ Sets ths status and the lastSignUpNotificationId values.
+* **dispose** ➡️ Closes the Database Client.
+* **initializeClient** ➡️ Initializes all needed properties.
+
+### [DbClientFactory](./src/functions/helpers/db-client-factory.ts)
+A class with the needed logic to decide which instance of IDbClient should instantiate, following the [Factory Pattern](https://en.wikipedia.org/wiki/Factory_method_pattern).
+* **MongoCollectionHandler** ➡️ Implementation of IDbClient to work with MongoDb.
+* **PostgresClient** ➡️ Implementation of IDbClient to work with Postgres.

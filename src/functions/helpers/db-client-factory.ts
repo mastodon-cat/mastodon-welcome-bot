@@ -1,16 +1,8 @@
-import { Execution, ExecutionStatus } from "../interfaces/execution";
+import { IDbClient } from "../interfaces/IDbClient";
 import { EnvVariableHelpers } from "./env-variable-helpers";
 import { ErrorHelper } from "./error-helper";
 import { MongoCollectionHandler } from "./mongo-client";
 import { PostgresClient } from "./postgres-client";
-
-export interface IDbClient {
-  getExecution(): Promise<Execution>;
-  updateExecutionStatus(id: string, status: ExecutionStatus): Promise<void>;
-  updateExecution(execution: Execution): Promise<void>;
-  initializeClient(): void | Promise<void>
-  dispose(): void | Promise<void>;
-}
 
 export class DbClientFacotry {
   public static async getClient(): Promise<IDbClient> {

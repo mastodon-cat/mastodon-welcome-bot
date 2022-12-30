@@ -1,8 +1,9 @@
 import { Handler } from "@netlify/functions";
-import { DbClientFacotry, IDbClient } from "./helpers/db-client-factory";
+import { DbClientFacotry } from "./helpers/db-client-factory";
 import { ErrorHelper } from "./helpers/error-helper";
 import { MastodonApiClient } from "./helpers/mastodon-api-client";
 import { Execution, ExecutionStatus } from "./interfaces/execution";
+import { IDbClient } from "./interfaces/IDbClient";
 import { SignUpNotification } from "./interfaces/signUpNotificationInterface";
 
 const handler: Handler = async () => {
@@ -20,7 +21,7 @@ const handler: Handler = async () => {
 
             for (const signUp of signUps) {
                 try {
-                    const message: string = buildStatusMessage(execution, signUp);
+                    const message: string = execution.buildStatusMessage(signUp);
                     await mastodonClient.publishStatus(message, execution.welcomeMessageVisibility);
                 } catch (error) {
                     ErrorHelper.HandleError("There was an error publishing the status to mastodon. Check the logs for more detail.", error);
@@ -42,18 +43,3 @@ const handler: Handler = async () => {
 
 export { handler };
 
-function buildStatusMessage(execution: Execution, signUp: SignUpNotification): string {
-    let mastodonUserName: string = "";
-    try {
-        if (!signUp?.account?.username) {
-            throw "There is no username";
-        }
-
-        mastodonUserName = signUp.account.username;
-    } catch (error) {
-        ErrorHelper.HandleError(`Notification is not valid: ${error}`, signUp);
-    }
-
-    return execution.welcomeMessage
-        .replaceAll("{USERNAME}", `@${mastodonUserName}`);
-}
