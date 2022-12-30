@@ -1,8 +1,9 @@
 import { Handler } from "@netlify/functions";
-import { DbClientFacotry, IDbClient } from "./helpers/db-client-factory";
+import { DbClientFacotry } from "./helpers/db-client-factory";
 import { ErrorHelper } from "./helpers/error-helper";
 import { MastodonApiClient } from "./helpers/mastodon-api-client";
 import { Execution, ExecutionStatus } from "./interfaces/execution";
+import { IDbClient } from "./interfaces/IDbClient";
 import { SignUpNotification } from "./interfaces/signUpNotificationInterface";
 
 const handler: Handler = async () => {

@@ -1,6 +1,6 @@
 import { Collection, Db, MongoClient, ObjectId, UpdateResult } from "mongodb";
 import { Execution, ExecutionStatus, IExecution } from "../interfaces/execution";
-import { IDbClient } from "./db-client-factory";
+import { IDbClient } from "../interfaces/IDbClient";
 import { EnvVariableHelpers } from "./env-variable-helpers";
 import { ErrorHelper } from "./error-helper";
 
