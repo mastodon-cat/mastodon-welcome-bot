@@ -1,47 +1,58 @@
-# Introduction
-When users sign up on a Mastodont's instance is nice to welcome them with a friendly message.
+# Introduccioó
 
-This project has been designed as a [Netlify function](https://docs.netlify.com/functions/overview/) that periodically requests [Mastodont's user notifications](https://docs.joinmastodon.org/methods/notifications/), filtering for `admin.sign_up` type. Then publishes a welcome message for each notification received since last message sent. The user can be mentioned in that message.
+>The English version of this document is [here](./Readme.en.md)
 
-In order to avoid sending the welcome message more than once to the same user, the process stores in a database the ID of the last `admin.sign_up` notification after sending the message. The database can be a MongoDb or a Postgres one.
+Quan els usuaris creen un compte a la instància Mastodon, és maco donar-los una acollidora benvingunda amb un missatge agradable.
 
-The function is configured to auto-run every 5 minutes, leveraging on [netlify Scheduled Functions](https://docs.netlify.com/functions/scheduled-functions/). It can be configured in the [netlify.toml](./netlify.toml) file.
+Aquest projecte ha estat dissenyat com a una [Netlify function](https://docs.netlify.com/functions/overview/) que periòdicament consulta les [notificacions d'usuari de Mastodon](https://docs.joinmastodon.org/methods/notifications/), les filtra per tipus d' `admin.sign_up`  i finalment publica un missatge de benvinguda als usuaris que s'han donat d'alta. Es pot fer esment de l'usuari al missatge.
 
-## Would you like to buy us a coffee?
+Per tal d'evitar l'enviament del missatge de benvinguda més d'un cop al mateix usuari, el procés emmagatzema a una base de dades el darrer ID de `admin.sign_up` un cop enviat el missatge. El sistema gestor de base de dades pot ser MongoDb o PostgreSql.
 
-Use the button below to make a donation, which will fund our instance of [mastodon.cat](https://mastodon.cat). Thank you!❤️❤️
-[![Invite us for a cup of coffee!!](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/L4L3H5BQL)
+La funció queda configurada per auto executar-se cada 5 minuts mitjançant  [netlify Scheduled Functions](https://docs.netlify.com/functions/scheduled-functions/). Es pot configurar al fitxer [netlify.toml](./netlify.toml). 
 
-## Why don't use a Mastodon webhook to act when a new user is created?
-The webhook acts instantlly when a new user signs up, so the welcome message would be sent before the account has been verified. In this case, the mention to the user is not valid, and it would remain as plain text.
-The `admin.sign_up` notification is not fired after the user actually verifies the account. This is why it is a valid method.
-# Deploying the function
-You can use the following button and follow the steps to deploy the Function to Netlify.
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/mastodon-cat/mastodon-welcome-bot)
+## Vols confidar aquest projecte a un cafè?
 
-If you rather do it manually, a [netlify.toml](./netlify.toml) file has been added to the project with the necessary configuration to deploy the function.
+Utilitza el botó que trobaràs a sota per fer una donació que serveixi per ajudar amb les despeses d'infraestructura del node [mastodon.cat](https://mastodon.cat). Thank you!❤️❤️
+[![Convida'ns a un cafè!!](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/L4L3H5BQL)
 
-Either way, you must set the `environment variables` in the Netlify site where the function is deployed. 
 
-**Please, read the environment variables documentation**.
+## Per què no usar simplement el webhook de Mastodon que es dispara quan es crea un usuari?
 
-This function needs a Mastodon application to be created so the notifications can be read and the message can be sent.
+El webhook es dispara de manera instantània quan un usuari es registra, llavors el missatge de benvinguda s'enviaria abans que l'usuari completés la verificació. L'efecte seria que la menció a l'usuari no tindria efecte i, per tant, l'usuari no rebria notificació ni missatge de benvinguda.
 
-# Application
-Go to `/settings/applications` in your Mastodon's instance and create a New Application. The new Application only needs an Application Name and the **`read:notifications`** and **`write:statuses`** scopes. To be able to read `admin.sign_up` notifications, the Application must be created by a user with enough permissions.
-After creating the application, 3 keys will be revealed: Client key, Client secret, and Your access token. `'Your access token'` will be the one used by the function.
+En resum, `admin.sign_up` no es dispara quan l'usuari verifica el compte i, per aquest motiu, no serveix com a mecanisme d'inici d'enviament de missatge de benvinguda.
 
-# Documentation
-## Environment variables
-This function relies on environment variables to be able to send the welcome publication.
-* **connectionstring** ➡️ The connection string to the database. It must start with `mongodb://` or `mongodb+srv://` for MongoDb databases or with `postgres://` for PostgresDb databases.
-* **dbname** ➡️ The name of the MongoDb or PostgresDb database.
-* **table** ➡️ The name of the MongoDb collection or the PostgresDb table.
+# Desplegar la funció
 
-## Database
-The database is a very simple one. The function will automatically connect to MongoDb or Postgres depending on how the connectionstring starts, following the explanation of the **connectionstring environment variable**.
-- For MongoDb consisting in just one document in one collection with the following structure:
+Pots usar el següent botó i les instruccions de sota per desplegar la funció a Netlify.
+
+[![Desplegar a Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/mastodon-cat/mastodon-welcome-bot)
+
+
+Si prefereixes fer-ho manualment, s'ha afegit un fitxer [netlify.toml](./netlify.toml) al projecte amb la configuració necessària per desplegar la funció.
+
+De qualsevol manera, heu d'establir les "variables d'entorn" al lloc Netlify on es desplega la funció.
+
+
+**Si us plau, llegiu la documentació de les variables d'entorn**.
+
+Aquesta funció necessita que es creï una "aplicació Mastodon" perquè es puguin llegir les notificacions i enviar el missatge.
+
+# Aplicació
+Aneu a "/settings/applications" a la instància de Mastodon i creeu una aplicació nova. La nova aplicació només necessita un nom d'aplicació i els àmbits **`read:notifications`** i **`write:statuses`**. Per poder llegir les notificacions `admin.sign_up` l'aplicació ha de ser creada per un usuari amb suficients permisos.
+Després de crear l'aplicació, es revelaran 3 claus: clau del client, secret del client i el vostre testimoni d'accés. `'Your access token'` serà el que farà servir la funció.
+
+# Documentació
+## Variables d'entorn
+Aquesta funció es basa en variables d'entorn per poder enviar la publicació de benvinguda.
+* **connectionstring** ➡️ La cadena de connexió a la base de dades. Ha de començar amb `mongodb://` o `mongodb+srv://` per a bases de dades MongoDb o amb `postgres://` per a bases de dades PostgresDb.
+* **dbname** ➡️ El nom de la base de dades MongoDb o PostgresDb.
+* **table** ➡️ El nom de la col·lecció MongoDb o la taula PostgresDb.
+
+## Base de dades
+La base de dades és molt senzilla. La funció es connectarà automàticament a MongoDb o Postgres en funció de com s'iniciï la cadena de connexió, seguint l'explicació de la **variable d'entorn de la cadena de connexió**.
+- Per a MongoDb que consisteix en un sol document en una col·lecció amb l'estructura següent:
 ```ts
 {
   _id: ObjectId;
@@ -53,7 +64,7 @@ The database is a very simple one. The function will automatically connect to Mo
   mastodonInstanceName: string;
 }
 ```
-- For PostgresDb consisting in just one row in one table with the following structure:
+- per PostgresDb és basa en una filera en una taula amb la següent estructura:
 ```sql
 CREATE TABLE {TABLE_NAME}
 (
@@ -67,52 +78,53 @@ CREATE TABLE {TABLE_NAME}
 );
 ```
 
-* **id** ➡️ is the Id of the MongoDb document. It is not important, but it should not change.
-* **status** ➡️ is either `Iddle` or `Running`.
-* **lastSignUpNotificationId** ➡️ is the Id of the last `admin.sign_up` notification retrieved from Mastodon. It is only updated after successfully sending the welcome message to the user.
-  * To know what this value must be prior to the deploying the functions, simply run the following request. It will get you the last 100 sign_up notifications. Pick the Id of the last one (or the one you prefer) and set the value.
+* **id** ➡️ L'Id del Document MongoDb. No és rellevant, però no es pot canviar.
+* **status** ➡️ Pot ser `Iddle` (ociòs) or `Running` (executant-se).
+* **lastSignUpNotificationId** ➡️ és l'identificador de l'última notificació `admin.sign_up` recuperada de Mastodon. Només s'actualitza després d'enviar amb èxit el missatge de benvinguda a l'usuari.
+   * Per saber quin ha de ser aquest valor abans de desplegar les funcions, simplement executeu la següent sol·licitud. Us donarà les 100 darreres notificacions de registre. Trieu l'identificador de l'últim (o el que preferiu) i establiu el valor.
  ```curl 
  curl --location -g --request GET 'https://{INSTANCE_NAME}/api/v1/notifications?types[]=admin.sign_up' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Bearer {MASTODON_API_TOKEN}'
  ```
-* **welcomeMessage** ➡️ The message to send to the newly registered user. To mention the user, the text `{USERNAME}` (**capital letters**) must be present in the text. The text can be multi-line.
-* **status** ➡️ is either `Iddle` or `Running`.
-* **welcomeMessageVisibility** ➡️ is either `public`, `unlisted`, `private` or `direct`. If not set, it defaults to `direct`.
-* **mastodonApiToken** ➡️ The `'Your access token'` value from the Mastodon's application.
-* **mastodonInstanceName** ➡️ The name of Mastodont's instance where the user has configured the webhook. For example `Mastodon.cat` would be a valid value.
-## Function
-[The function](./src/functions/welcome-new-user.ts) follows these steps:
-1. Creates a client to work with MongoDb collections. The constructor of the client ensures that all necessary environment variables to work with MongoDb are set.
-2. Checks that current execution status is `Iddle`. If it's not, it does nothing. This way concurrency is avoided.
-3. Sets the current execution status to `Running`.
-4. Gets all notifications since last one and orders them by Id ASC.
-5. Publishes a welcome message for each `admin.sign_up` notification.
-6. Sets the current execution status back to `Iddle` and the `lastSignUpNotificationId` to the ID of the last notification for which a welcome message has been sent.
+* **welcomeMessage** ➡️ El missatge per enviar a l'usuari recent registrat. Per esmentar l'usuari, el text `{USERNAME}` (**majúscules**) ha d'estar present al text. El text pot ser de diverses línies.
+* **mastodonApiToken** ➡️ El valor de  `'Your access token'` de l'aplicació Mastodon.
+* **mastodonInstanceName** ➡️ El nom de la instància de Mastodont on l'usuari ha configurat el webhook. Per exemple `Mastodon.cat` seria un valor vàlid.
 
+## Funció
+[La functió](./src/functions/welcome-new-user.ts) s'executa seguint les següents passes:
+1. Crea un client per treballar amb les col·leccions de MongoDb. El constructor del client assegura que totes les variables d'entorn necessàries per treballar amb MongoDb estan configurades.
+2. Comprova que l'estat d'execució actual sigui "`Iddle`". Si no és així, no fa res. D'aquesta manera s'evita la concurrència.
+3. Estableix l'estat d'execució actual a `Running` ("En execució").
+4. Rep totes les notificacions des de l'última i les ordena per Id ASC.
+5. Publica un missatge de benvinguda per a cada notificació `admin.sign_up`.
+6. Torna a establir l'estat d'execució actual a "Iddle" i el "lastSignUpNotificationId" a l'ID de l'última notificació per a la qual s'ha enviat un missatge de benvinguda.
+  
 ## Helpers
-Some classes with static methods have been created either to reuse code or to keep the main code of the function as simple as possible.
+Algunes classes amb mètodes estàtics s'han creat per reutilitzar codi o per mantenir el codi principal de la funció el més senzill possible.
+
 ### [ErrorHelper](./src/functions/helpers/error-helper.ts)
-Errors in Netlify's log are very visual because they're shown on a red background.
-* **HandleError** ➡️ Sends the message as an error to the console before throwing an Exception.
+Els errors al registre de Netlify són molt visuals perquè es mostren sobre un fons vermell.
+
+* **HandleError** ➡️ Envia el missatge com a error a la consola abans de llançar una excepció.
 ### [EnvVariableHelpers](./src/functions/helpers/env-variable-helpers.ts)
-Handles environment variables
-* **AssertEnvVariablesArePresent** ➡️ if any needed environment variable is missing in the configuration, uses the HandleError helper to throw an Exception.
-* **GetEnvironmentVariable** ➡️ The existence of all needed environment variables has been asserted at the beginning of the function by calling the AssertEnvVariablesArePresent method. In NodeJS retrieving an environment variable using `process.env.VariableName` or `process.env.['VariableName']` returns a nullable string (string?) but we want a not nullable string, so we avoid false alerts in our code. **GetEnvironmentVariable is just a silly & convenient method to get a string instead of a string?**.
+Maneguen variables d'entorn
+* **AssertEnvVariablesArePresent** ➡️ si falta alguna variable d'entorn necessària a la configuració, utilitza l'ajudant HandleError per llançar una excepció.
+* **GetEnvironmentVariable** ➡️ L'existència de totes les variables d'entorn necessàries s'ha afirmat al principi de la funció cridant al mètode AssertEnvVariablesArePresent. A NodeJS, la recuperació d'una variable d'entorn amb `process.env.VariableName` o `process.env.['VariableName']` retorna una cadena nul·la (string?), però volem una cadena que no es pot anul·lar, de manera que evitem falses alertes al nostre codi. **GetEnvironmentVariable és només un mètode simple i de convenicència per obtenir un string en lloc dun string?**.
+ 
 ### [MastodonApiClient](./src/functions/helpers/mastodon-api-client.ts)
-A class to encapsulate requests to the Mastodon API.
-* **getLastSignUps** ➡️ Gets all notifications of type `admin.sign_up` since last one.
-* **publishStatus** ➡️ Builds the JSON body with the welcome message and the selected visibility (`direct` if undefined) and sends it to Mastodon's API. Handles the Exception.
+Una classe per encapsular sol·licituds a l'API Mastodon.
+* **getLastSignUps** ➡️ Obté totes les notificacions de tipus `admin.sign_up` des de l'última.
+* **publishStatus** ➡️ Construeix el cos JSON amb el missatge de benvinguda i la visibilitat seleccionada (`directa` si no està definit) i l'envia a l'API de Mastodon. Gestiona l'excepció.
 
 ### [IDbClient](./src/functions/interfaces/IDbClient.ts)
-An interface to define the contract that MongoDb and Postgres clients need to fulfill class to encapsulate work with database.
-* **getExecution** ➡️ Gets the object with the data mentioned in the **Database section**.
-* **updateExecutionStatus** ➡️ Sets the status property value.
-* **updateExecution** ➡️ Sets ths status and the lastSignUpNotificationId values.
-* **dispose** ➡️ Closes the Database Client.
-* **initializeClient** ➡️ Initializes all needed properties.
-
+Una interfície per definir el contracte que els clients de MongoDb i Postgres han de complir la classe per encapsular el treball amb la base de dades.
+* **getExecution** ➡️ Obté l'objecte amb les dades esmentades a la secció **Base de dades**.
+* **updateExecutionStatus** ➡️ Estableix el valor de la propietat d'estat.
+* **updateExecution** ➡️ Estableix aquest estat i els valors lastSignUpNotificationId.
+* **dispose** ➡️ Tanca el client de base de dades.
+* **initializeClient** ➡️ Inicialitza totes les propietats necessàries.
 ### [DbClientFactory](./src/functions/helpers/db-client-factory.ts)
-A class with the needed logic to decide which instance of IDbClient should instantiate, following the [Factory Pattern](https://en.wikipedia.org/wiki/Factory_method_pattern).
-* **MongoCollectionHandler** ➡️ Implementation of IDbClient to work with MongoDb.
-* **PostgresClient** ➡️ Implementation of IDbClient to work with Postgres.
+Una classe amb la lògica necessària per decidir quina instància d'IDbClient ha d'instanciar, seguint el [Factory Pattern](https://en.wikipedia.org/wiki/Factory_method_pattern).
+* **MongoCollectionHandler** ➡️ Implementació d'IDbClient per treballar amb MongoDb.
+* **PostgresClient** ➡️ Implementació d'IDbClient per treballar amb Postgres.
