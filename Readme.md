@@ -1,6 +1,6 @@
-# Introduccioó
+> ## The English version of this document is [here](./Readme.en.md)
 
->The English version of this document is [here](./Readme.en.md)
+# Introducció
 
 Quan els usuaris creen un compte a la instància Mastodon, és maco donar-los una acollidora benvingunda amb un missatge agradable.
 
