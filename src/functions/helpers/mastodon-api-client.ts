@@ -1,4 +1,4 @@
-import got from 'got';
+import got, { Headers, Method, OptionsOfJSONResponseBody } from 'got';
 import { Execution } from '../interfaces/execution';
 import { SignUpNotification } from '../interfaces/signUpNotificationInterface';
 import { EnvVariableHelpers } from './env-variable-helpers';
@@ -33,7 +33,7 @@ export class MastodonApiClient {
                 visibility: visibility || "direct"
             };
 
-            await this.mastodonApiCall(url, 'POST', body);
+            await this.mastodonApiCall<void>(url, 'POST', body);
             console.log(`Welcome message sent: '${message}'`);
         } catch (error: any) {
             console.error('Error publishing to ' + instanceName, error);
@@ -41,21 +41,26 @@ export class MastodonApiClient {
         }
     }
 
-    private async mastodonApiCall<T>(url: string, method: string, body: any = undefined): Promise<T> {
-        const headers = {
+    private async mastodonApiCall<T>(url: string, method: Method, body: any = undefined): Promise<T> {
+        const headers: Headers = {
             "Authorization": `Bearer ${this.token}`,
             "Content-Type": "application/json",
         };
 
-        switch (method.toLowerCase()) {
-            case 'get':
-                return await got.get(url, { headers }).json<T>();
-            case 'put':
-                return await got.put(url, { headers: headers, json: body }).json();
-            case 'post':
-                return await got.post(url, { headers: headers, json: body }).json();
-        }
+        const options: OptionsOfJSONResponseBody = {
+            method,
+            headers,
+            timeout: {
+                request: 1500,
+            },
+            json: body
+        };
 
-        return {} as T;
+        try {
+            return await got(url, options).json<T>();
+        } catch (error) {
+            console.error(`Error executing a ${method} request to ${url}`, error);
+            throw error;
+        }
     }
 }
