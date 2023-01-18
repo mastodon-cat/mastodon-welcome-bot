@@ -62,6 +62,7 @@ La base de dades és molt senzilla. La funció es connectarà automàticament a 
   welcomeMessageVisibility: string;
   mastodonApiToken: string;
   mastodonInstanceName: string;
+  enforceRetries: boolean;
 }
 ```
 - per PostgresDb és basa en una filera en una taula amb la següent estructura:
@@ -74,7 +75,8 @@ CREATE TABLE {TABLE_NAME}
     "welcomeMessage" TEXT NOT NULL,
     "welcomeMessageVisibility" VARCHAR NOT NULL,
     "mastodonApiToken" VARCHAR NOT NULL,
-    "mastodonInstanceName" VARCHAR NOT NULL
+    "mastodonInstanceName" VARCHAR NOT NULL,
+    "enforceRetries" BOOLEAN NULL;
 );
 ```
 
@@ -90,6 +92,7 @@ CREATE TABLE {TABLE_NAME}
 * **welcomeMessage** ➡️ El missatge per enviar a l'usuari recent registrat. Per esmentar l'usuari, el text `{USERNAME}` (**majúscules**) ha d'estar present al text. El text pot ser de diverses línies.
 * **mastodonApiToken** ➡️ El valor de  `'Your access token'` de l'aplicació Mastodon.
 * **mastodonInstanceName** ➡️ El nom de la instància de Mastodont on l'usuari ha configurat el webhook. Per exemple `Mastodon.cat` seria un valor vàlid.
+* **enforceRetries** ➡️ Especifica si s'han de fer reintents (fins a dos vegades a més de l'intent inicial) a les peticions HTTP que no siguin de tipus 'POST'. En cas de ser null es considerarà que no s'han de fer.
 
 ## Funció
 [La functió](./src/functions/welcome-new-user.ts) s'executa seguint les següents passes:

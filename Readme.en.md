@@ -51,6 +51,7 @@ The database is a very simple one. The function will automatically connect to Mo
   welcomeMessageVisibility: string;
   mastodonApiToken: string;
   mastodonInstanceName: string;
+  enforceRetries: boolean;
 }
 ```
 - For PostgresDb consisting in just one row in one table with the following structure:
@@ -63,7 +64,8 @@ CREATE TABLE {TABLE_NAME}
     "welcomeMessage" TEXT NOT NULL,
     "welcomeMessageVisibility" VARCHAR NOT NULL,
     "mastodonApiToken" VARCHAR NOT NULL,
-    "mastodonInstanceName" VARCHAR NOT NULL
+    "mastodonInstanceName" VARCHAR NOT NULL,
+    "enforceRetries" BOOLEAN NULL;
 );
 ```
 
@@ -80,6 +82,7 @@ CREATE TABLE {TABLE_NAME}
 * **welcomeMessageVisibility** ➡️ is either `public`, `unlisted`, `private` or `direct`. If not set, it defaults to `direct`.
 * **mastodonApiToken** ➡️ The `'Your access token'` value from the Mastodon's application.
 * **mastodonInstanceName** ➡️ The name of Mastodon's instance where the user has configured the webhook. For example `Mastodon.cat` would be a valid value.
+* **enforceRetries** ➡️ In case that we want the function to retry any failed HTTP request (except 'POST' ones) that value should be set to true. If is false or null/undefined, thos retries won't be made.
 ## Function
 [The function](./src/functions/welcome-new-user.ts) follows these steps:
 1. Creates a client to work with MongoDb collections. The constructor of the client ensures that all necessary environment variables to work with MongoDb are set.
