@@ -6,10 +6,12 @@ import { EnvVariableHelpers } from './env-variable-helpers';
 export class MastodonApiClient {
     private token: string;
     private instanceName: string;
+    private enforceRetries: boolean;
     constructor(execution: Execution) {
         execution.AssertMastodonVariables();
         this.token = execution.mastodonApiToken;
         this.instanceName = execution.mastodonInstanceName;
+        this.enforceRetries = execution.enforceRetries || false;
     }
 
     public async getLastSignUps(signUpId: number): Promise<SignUpNotification[]> {
@@ -18,7 +20,7 @@ export class MastodonApiClient {
             const url: string = `https://${this.instanceName}/api/v1/notifications?since_id=${signUpId}&types[]=admin.sign_up`;
             return await this.mastodonApiCall<SignUpNotification[]>(url, 'GET');
         } catch (error: any) {
-            console.error('Error publishing to ' + instanceName, error);
+            console.error(`Error getting last sign ups from ${instanceName}`, error);
             throw error;
         }
     }
@@ -36,7 +38,7 @@ export class MastodonApiClient {
             await this.mastodonApiCall<void>(url, 'POST', body);
             console.log(`Welcome message sent: '${message}'`);
         } catch (error: any) {
-            console.error('Error publishing to ' + instanceName, error);
+            console.error(`Error publishing to ${instanceName}`, error);
             throw error;
         }
     }
@@ -53,8 +55,17 @@ export class MastodonApiClient {
             timeout: {
                 request: 1500,
             },
+            retry: {
+                limit: 0
+            },
             json: body
         };
+
+        if (this.enforceRetries === false) {
+            options.retry = {
+                limit: 0
+            };
+        }
 
         try {
             return await got(url, options).json<T>();

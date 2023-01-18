@@ -14,6 +14,7 @@ export interface IExecution {
   welcomeMessageVisibility: string;
   mastodonApiToken: string;
   mastodonInstanceName: string;
+  enforceRetries: boolean | undefined;
 }
 export class Execution implements IExecution {
 
@@ -28,6 +29,7 @@ export class Execution implements IExecution {
     this.welcomeMessageVisibility = execution.welcomeMessageVisibility;
     this.mastodonApiToken = execution.mastodonApiToken;
     this.mastodonInstanceName = execution.mastodonInstanceName;
+    this.enforceRetries = execution.enforceRetries;
   }
 
   public id: string;
@@ -37,6 +39,7 @@ export class Execution implements IExecution {
   public welcomeMessageVisibility: string;
   public mastodonApiToken: string;
   public mastodonInstanceName: string;
+  public enforceRetries: boolean | undefined;
 
   public AssertMastodonVariables(): void {
     if (!this.welcomeMessage || !this.mastodonInstanceName || !this.mastodonApiToken) {
