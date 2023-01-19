@@ -55,9 +55,6 @@ export class MastodonApiClient {
             timeout: {
                 request: 1500,
             },
-            retry: {
-                limit: 0
-            },
             json: body
         };
 
